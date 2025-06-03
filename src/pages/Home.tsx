@@ -62,12 +62,6 @@ const Home: React.FC = () => {
                 >
                   Log In
                 </Link>
-                <Link
-                  to="/register"
-                  className="btn bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white px-8 py-3 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  Begin
-                </Link>
               </>
             )}
           </div>
