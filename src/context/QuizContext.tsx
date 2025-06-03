@@ -82,40 +82,54 @@ const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
   }
 };
 
-// Mock question generator function
-const generateMockQuestions = (content: string, count = 25): Question[] => {
-  // Get some words from the content to use in questions
-  const words = content
-    .split(/\s+/)
-    .filter(word => word.length > 4)
-    .slice(0, 100);
-
-  const topics = [
-    'Indian History',
-    'Geography',
-    'Indian Polity',
-    'Economy',
-    'Science and Technology',
-  ];
-
-  // Generate random questions
-  return Array.from({ length: count }, (_, i) => {
-    const topic = topics[Math.floor(Math.random() * topics.length)];
-    const randomWord = words[Math.floor(Math.random() * words.length)];
-    
+const generateQuestionsFromPDF = (content: string): Question[] => {
+  // Extract important sentences and concepts from the content
+  const sentences = content.split(/[.!?]+/).filter(s => s.length > 20);
+  const keywords = extractKeywords(content);
+  
+  return sentences.slice(0, 25).map((sentence, index) => {
+    const questionData = generateQuestionFromSentence(sentence, keywords);
     return {
       id: uuidv4(),
-      text: `Question ${i + 1}: Which of the following best describes the concept of "${randomWord}" in ${topic}?`,
-      options: [
-        `It refers to a historical event during the pre-independence era`,
-        `It's a geographical feature found in Northern India`,
-        `It's a constitutional provision added in the 42nd amendment`,
-        `It's an economic policy introduced during liberalization`,
-      ],
-      correctAnswer: `It's a constitutional provision added in the 42nd amendment`,
-      explanation: `The concept of "${randomWord}" is an important aspect of ${topic}. It was established during the constitutional reforms and has significant implications for governance and policy-making in India.`,
+      ...questionData
     };
   });
+};
+
+const extractKeywords = (content: string): string[] => {
+  // Extract important keywords and phrases
+  const words = content.split(/\s+/);
+  return words.filter(word => 
+    word.length > 4 && 
+    !['which', 'what', 'when', 'where', 'why', 'how'].includes(word.toLowerCase())
+  );
+};
+
+const generateQuestionFromSentence = (sentence: string, keywords: string[]): Omit<Question, 'id'> => {
+  // Generate a question based on the sentence
+  const relevantKeywords = keywords.filter(k => sentence.toLowerCase().includes(k.toLowerCase()));
+  const keyword = relevantKeywords[Math.floor(Math.random() * relevantKeywords.length)];
+  
+  // Generate question text
+  const questionText = `What is the significance of ${keyword} in the context of UPSC examination?`;
+  
+  // Generate options using content context
+  const options = [
+    `It represents a key concept in ${sentence}`,
+    `It's related to economic reforms and policies`,
+    `It's a significant historical event or movement`,
+    `It's an important constitutional provision`
+  ];
+  
+  // Randomly select correct answer
+  const correctAnswer = options[Math.floor(Math.random() * options.length)];
+  
+  return {
+    text: questionText,
+    options,
+    correctAnswer,
+    explanation: `The concept of ${keyword} is important because ${sentence}. This is a frequently asked topic in UPSC examinations.`
+  };
 };
 
 // Create context
@@ -139,12 +153,9 @@ export const QuizProvider = ({ children }: { children: React.ReactNode }) => {
   const generateQuestions = (content: string, title: string) => {
     dispatch({ type: 'GENERATE_QUESTIONS_START' });
     try {
-      // Simulate API call
       setTimeout(() => {
-        const questions = generateMockQuestions(content);
+        const questions = generateQuestionsFromPDF(content);
         dispatch({ type: 'GENERATE_QUESTIONS_SUCCESS', payload: questions });
-        
-        // Save the quiz title in session storage
         sessionStorage.setItem('currentQuizTitle', title);
       }, 2000);
     } catch (error) {
